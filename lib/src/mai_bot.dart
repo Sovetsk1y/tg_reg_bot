@@ -1,6 +1,9 @@
 import 'package:hive_ce/hive.dart';
 import 'package:tg_reg_bot/src/commands/command.dart';
 import 'package:teledart/teledart.dart';
+import 'package:tg_reg_bot/tg_reg_bot.dart';
+
+final class NoCommand implements Exception {}
 
 final class MaiBot {
   final bool autostart;
@@ -44,5 +47,16 @@ final class MaiBot {
       _teledart.start();
       _working = true;
     }
+  }
+
+  void playCommand(TeleDartMessage event, {required String name}) {
+    final command = _commands.firstWhere(
+      (command) => command.name == name,
+      orElse: () => throw NoCommand(),
+    );
+    _state = command.name;
+    command.call(event, _teledart, _db, () {
+      _state = null;
+    });
   }
 }
