@@ -66,22 +66,23 @@ base class StateCommand extends MaiCommand {
     TeleDartMessage event,
     TeleDart teledart,
     BoxCollection db,
+    void Function() onFinish,
   ) async {
     try {
-      await super.call(event, teledart, db);
+      await super.call(event, teledart, db, onFinish);
       final chatId = event.chat.id;
       if (_userOnMessageSubscription == null &&
           _userOnEmailSubscription == null &&
           _userOnPhoneNumberSubscription == null) {
         _userOnMessageSubscription = teledart
             .onMessage()
-            .listen((event) => _eventHandler(event, teledart));
+            .listen((event) => _eventHandler(event, teledart, onFinish));
         _userOnPhoneNumberSubscription = teledart
             .onPhoneNumber()
-            .listen((event) => _eventHandler(event, teledart));
+            .listen((event) => _eventHandler(event, teledart, onFinish));
         _userOnEmailSubscription = teledart
             .onEmail()
-            .listen((event) => _eventHandler(event, teledart));
+            .listen((event) => _eventHandler(event, teledart, onFinish));
       }
 
       // Send initial text if exists
@@ -99,6 +100,7 @@ base class StateCommand extends MaiCommand {
   Future<void> _eventHandler(
     TeleDartMessage event,
     TeleDart teledart,
+    void Function() onFinish,
   ) async {
     final chatId = event.chat.id;
     if (_current[chatId] == null) return;
@@ -108,13 +110,17 @@ base class StateCommand extends MaiCommand {
         _userModels[chatId.toString()] = {};
       }
       _userModels[chatId.toString()]?[_current[chatId]!.fieldName] = event.text;
-      _nextState(teledart, event);
+      _nextState(teledart, event, onFinish);
     } else {
       teledart.sendMessage(chatId, errMsg);
     }
   }
 
-  void _nextState(TeleDart teledart, TeleDartMessage event) {
+  void _nextState(
+    TeleDart teledart,
+    TeleDartMessage event,
+    void Function() onFinish,
+  ) {
     final chatId = event.chat.id;
     if (_current[chatId] == null) return;
     final currState = _current[chatId]!;
@@ -123,7 +129,7 @@ base class StateCommand extends MaiCommand {
       _current[chatId] = _states[currIndex + 1];
       if (_current[chatId]?.skip != null &&
           _current[chatId]!.skip!(_userModels[chatId.toString()] ?? {})) {
-        return _nextState(teledart, event);
+        return _nextState(teledart, event, onFinish);
       }
       teledart.sendMessage(chatId, _current[chatId]!.msg);
     } else {
@@ -133,9 +139,9 @@ base class StateCommand extends MaiCommand {
         _userModels[chatId.toString()] ?? {},
         teledart,
       );
+      onFinish();
       _userModels[chatId.toString()] = {};
       if (finalText != null) teledart.sendMessage(chatId, finalText!);
-      throw StateCompleted(name);
     }
   }
 }

@@ -33,13 +33,9 @@ final class MaiBot {
     for (final command in _commands) {
       _teledart.onCommand(command.name).listen((event) {
         _state = command.name;
-        try {
-          command.call(event, _teledart, _db);
-        } on StateCompleted catch (e) {
-          if (state == e.name) {
-            _state = null;
-          }
-        }
+        command.call(event, _teledart, _db, () {
+          _state = null;
+        });
       });
     }
 

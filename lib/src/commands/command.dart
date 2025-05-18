@@ -5,12 +5,6 @@ import 'package:teledart/teledart.dart';
 
 final class NoRights implements Exception {}
 
-final class StateCompleted implements Exception {
-  final String name;
-
-  StateCompleted(this.name);
-}
-
 abstract base class MaiCommand {
   String get name;
 
@@ -29,6 +23,9 @@ abstract base class MaiCommand {
     TeleDartMessage event,
     TeleDart teledart,
     BoxCollection db,
+
+    /// Необходимо вызывать когда команда завершила действие
+    void Function() onFinish,
   ) async {
     if (allowCondition?.call(event, teledart, db) == false) throw NoRights();
     if (allowedUsers != null) {
@@ -75,15 +72,19 @@ final class OutputCommand extends MaiCommand {
   });
 
   @override
-  Future<void> call(TeleDartMessage event, TeleDart teledart, _) async {
-    super.call(event, teledart, _);
+  Future<void> call(
+    TeleDartMessage event,
+    TeleDart teledart,
+    _,
+    void Function() onFinish,
+  ) async {
+    super.call(event, teledart, _, onFinish);
     switch (output) {
       case TextOutput():
         await teledart.sendMessage(event.chat.id, (output as TextOutput).text);
       case FileOutput():
         await teledart.sendDocument(event.chat.id, (output as FileOutput).file);
     }
-    throw StateCompleted(name);
   }
 }
 
@@ -111,9 +112,13 @@ final class CustomCommand extends MaiCommand {
 
   @override
   Future<void> call(
-      TeleDartMessage event, TeleDart teledart, BoxCollection db) async {
-    super.call(event, teledart, db);
+    TeleDartMessage event,
+    TeleDart teledart,
+    BoxCollection db,
+    void Function() onFinish,
+  ) async {
+    super.call(event, teledart, db, onFinish);
     await callback(event, teledart, db);
-    throw StateCompleted(name);
+    onFinish();
   }
 }

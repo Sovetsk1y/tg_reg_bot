@@ -15,8 +15,9 @@ final class DefaultStartCommand extends MaiCommand {
     TeleDartMessage event,
     TeleDart teledart,
     BoxCollection db,
+    void Function() onFinish,
   ) async {
-    super.call(event, teledart, db);
+    super.call(event, teledart, db, onFinish);
     final box = Hive.box<MaiUser>('users');
     final userId = event.chat.id;
     final user = box.get(userId);
