@@ -19,9 +19,12 @@ final class MaiBot {
 
   bool get working => _working;
   bool get initialized => _initialized;
+  String? get state => _state;
 
   bool _initialized = false;
   bool _working = false;
+
+  String? _state;
 
   void _init() {
     if (initialized) return;
@@ -29,7 +32,14 @@ final class MaiBot {
     // Reg commands
     for (final command in _commands) {
       _teledart.onCommand(command.name).listen((event) {
-        command.call(event, _teledart, _db);
+        _state = command.name;
+        try {
+          command.call(event, _teledart, _db);
+        } on StateCompleted catch (e) {
+          if (state == e.name) {
+            _state = null;
+          }
+        }
       });
     }
 

@@ -5,6 +5,12 @@ import 'package:teledart/teledart.dart';
 
 final class NoRights implements Exception {}
 
+final class StateCompleted implements Exception {
+  final String name;
+
+  StateCompleted(this.name);
+}
+
 abstract base class MaiCommand {
   String get name;
 
@@ -77,6 +83,7 @@ final class OutputCommand extends MaiCommand {
       case FileOutput():
         await teledart.sendDocument(event.chat.id, (output as FileOutput).file);
     }
+    throw StateCompleted(name);
   }
 }
 
@@ -106,6 +113,7 @@ final class CustomCommand extends MaiCommand {
   Future<void> call(
       TeleDartMessage event, TeleDart teledart, BoxCollection db) async {
     super.call(event, teledart, db);
-    return callback(event, teledart, db);
+    await callback(event, teledart, db);
+    throw StateCompleted(name);
   }
 }

@@ -135,6 +135,7 @@ base class StateCommand extends MaiCommand {
       );
       _userModels[chatId.toString()] = {};
       if (finalText != null) teledart.sendMessage(chatId, finalText!);
+      throw StateCompleted(name);
     }
   }
 }
